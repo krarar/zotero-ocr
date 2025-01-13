@@ -525,8 +525,11 @@
                         <button class="back-button me-2" onclick="showUsersList()">
                             <i class="fas fa-arrow-left"></i>
                         </button>
-                        <img src="/api/placeholder/45/45" alt="الصورة الشخصية" class="user-avatar me-2">
-                        <h5 class="mb-0" id="current-user-name">اسم المستخدم</h5>
+                        <img id="chat-user-avatar" src="/api/placeholder/45/45" alt="الصورة الشخصية" class="user-avatar me-2">
+                        <div>
+                            <h5 class="mb-0" id="chat-user-name">اسم المستخدم</h5>
+                            <small id="chat-user-id" class="text-light">المعرف: </small>
+                        </div>
                     </div>
                     <div>
                         <button class="btn btn-light" onclick="logout()">
@@ -666,42 +669,8 @@ async function login() {
         }
 
         // بدء المحادثة
-        function startChat(uid, userData) {
-            currentChatUser = {
-                uid,
-                username: userData.username,
-                avatarUrl: userData.avatarUrl
-            };
+        // تحديث دالة بدء المحادثة
 
-            document.getElementById('users-container').style.display = 'none';
-            document.getElementById('chat-container').style.display = 'block';
-            
-            // تحديث واجهة المحادثة
-            const chatHeader = document.querySelector('.chat-header');
-            chatHeader.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <button class="btn btn-light me-2" onclick="showUsersList()">
-                            <i class="fas fa-arrow-right"></i>
-                        </button>
-                        <img src="${userData.avatarUrl || '/api/placeholder/45/45'}" alt="" class="user-avatar me-2">
-                        <h5 class="mb-0">${userData.username}</h5>
-                    </div>
-                    <div>
-                        <button class="btn btn-light" onclick="logout()">
-                            <i class="fas fa-sign-out-alt"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            // تنظيف وتحميل الرسائل
-            document.getElementById('messages-container').innerHTML = '';
-            loadMessages();
-        }
-
-        // تحديث وظيفة إرسال الرسائل
-      // تحديث دالة إرسال الرسائل
 
 
 // دالة للحصول على معرف المحادثة
@@ -733,6 +702,11 @@ function loadMessages() {
         
         // إضافة اسم المرسل للرسائل المستلمة فقط
         if (!isSender) {
+            const senderAvatar = document.createElement('img');
+            senderAvatar.src = currentChatUser.avatarUrl || '/api/placeholder/45/45';
+            senderAvatar.classList.add('user-avatar', 'me-2');
+            messageElement.appendChild(senderAvatar);
+
             const senderName = document.createElement('div');
             senderName.classList.add('sender-name', 'small', 'text-muted', 'mb-1');
             senderName.textContent = messageData.senderName;
@@ -763,42 +737,7 @@ function loadMessages() {
 }
 
 // تحديث دالة بدء المحادثة
-function startChat(uid, userData) {
-    currentChatUser = {
-        uid,
-        username: userData.username,
-        avatarUrl: userData.avatarUrl
-    };
 
-    document.getElementById('users-container').style.display = 'none';
-    document.getElementById('chat-container').style.display = 'block';
-    
-    // تحديث واجهة المحادثة
-    const chatHeader = document.querySelector('.chat-header');
-    chatHeader.innerHTML = `
-        <div class="d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <button class="btn btn-light me-2" onclick="showUsersList()">
-                    <i class="fas fa-arrow-right"></i>
-                </button>
-                <img src="${userData.avatarUrl || '/api/placeholder/45/45'}" alt="" class="user-avatar me-2">
-                <div>
-                    <h5 class="mb-0">${userData.username}</h5>
-                    <small class="text-light">المعرف: ${userData.userId}</small>
-                </div>
-            </div>
-            <div>
-                <button class="btn btn-light" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
-            </div>
-        </div>
-    `;
-
-    // تنظيف وتحميل الرسائل
-    document.getElementById('messages-container').innerHTML = '';
-    loadMessages();
-}
 
         // تحديث وظيفة تحميل الرسائل
         function loadMessages() {
@@ -1184,42 +1123,134 @@ function startChat(uid, userData) {
         }
     }
 
-    // Start chat
-    function startChat(uid, userData) {
-        currentChatUser = {
-            uid,
-            username: userData.username,
-            avatarUrl: userData.avatarUrl
-        };
+   // تحديث دالة بدء المحادثة
+function startChat(uid, userData) {
+    currentChatUser = {
+        uid,
+        username: userData.username,
+        avatarUrl: userData.avatarUrl || '/api/placeholder/45/45',
+        userId: userData.userId
+    };
 
-        document.getElementById('users-container').style.display = 'none';
-        document.getElementById('chat-container').style.display = 'block';
-        
-        const chatHeader = document.querySelector('.chat-header');
-        chatHeader.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <button class="btn btn-light me-2" onclick="showUsersList()">
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
-                    <img src="${userData.avatarUrl || '/api/placeholder/45/45'}" alt="" class="user-avatar me-2">
-                    <div>
-                        <h5 class="mb-0">${userData.username}</h5>
-                        <small class="text-light">المعرف: ${userData.userId}</small>
-                    </div>
-                </div>
-                <div>
-                    <button class="btn btn-light" onclick="logout()">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
-                </div>
-            </div>
-        `;
+    document.getElementById('users-container').style.display = 'none';
+    document.getElementById('chat-container').style.display = 'block';
+    
+    // تحديث معلومات المستخدم في رأس المحادثة
+    document.getElementById('chat-user-avatar').src = currentChatUser.avatarUrl;
+    document.getElementById('chat-user-name').textContent = currentChatUser.username;
+    document.getElementById('chat-user-id').textContent = `المعرف: ${currentChatUser.userId}`;
 
-        document.getElementById('messages-container').innerHTML = '';
-        loadMessages();
+    // تنظيف وتحميل الرسائل
+    document.getElementById('messages-container').innerHTML = '';
+    
+    // إنشاء معرف المحادثة
+    const chatId = getChatId(currentUser.uid, currentChatUser.uid);
+    
+    // تحميل الرسائل الخاصة بهذه المحادثة
+    loadMessages(chatId);
+
+    // إضافة معالج لزر الرجوع في المتصفح
+    window.history.pushState({ page: 'chat' }, '');
+}
+
+// تحديث دالة إرسال الرسائل
+async function sendMessage(event) {
+    event.preventDefault();
+    const messageInput = document.getElementById('message-input');
+    const message = messageInput.value.trim();
+    
+    if (message && currentUser && currentChatUser) {
+        try {
+            const chatId = getChatId(currentUser.uid, currentChatUser.uid);
+            
+            await database.ref(`chats/${chatId}/messages`).push({
+                senderId: currentUser.uid,
+                receiverId: currentChatUser.uid,
+                senderName: currentUser.username,
+                message: message,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+            
+            messageInput.value = '';
+            messageInput.focus();
+        } catch (error) {
+            alert(`خطأ في إرسال الرسالة: ${error.message}`);
+        }
     }
+}
 
+// تحديث دالة تحميل الرسائل
+function loadMessages(chatId) {
+    const messagesContainer = document.getElementById('messages-container');
+    messagesContainer.innerHTML = '';
+    
+    // إلغاء الاستماع للمحادثات السابقة
+    if (window.currentMessagesRef) {
+        window.currentMessagesRef.off();
+    }
+    
+    // الاستماع للرسائل الجديدة
+    window.currentMessagesRef = database.ref(`chats/${chatId}/messages`);
+    window.currentMessagesRef.on('child_added', (snapshot) => {
+        const messageData = snapshot.val();
+        displayMessage(messageData);
+    });
+}
+
+// دالة عرض الرسالة
+function displayMessage(messageData) {
+    const messagesContainer = document.getElementById('messages-container');
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('message');
+    
+    const isSender = messageData.senderId === currentUser.uid;
+    messageElement.classList.add(isSender ? 'message-sent' : 'message-received');
+    
+    // إضافة صورة المرسل للرسائل المستلمة
+    if (!isSender) {
+        const avatarContainer = document.createElement('div');
+        avatarContainer.className = 'd-flex align-items-start mb-1';
+        
+        const avatar = document.createElement('img');
+        avatar.src = currentChatUser.avatarUrl;
+        avatar.className = 'user-avatar me-2';
+        avatar.style.width = '30px';
+        avatar.style.height = '30px';
+        avatarContainer.appendChild(avatar);
+        
+        messageElement.appendChild(avatarContainer);
+    }
+    
+    const messageContent = document.createElement('div');
+    messageContent.classList.add('message-content');
+    messageContent.textContent = messageData.message;
+    messageElement.appendChild(messageContent);
+    
+    const timestamp = document.createElement('div');
+    timestamp.classList.add('message-time', 'small', 'text-muted', 'mt-1');
+    const messageDate = new Date(messageData.timestamp);
+    timestamp.textContent = messageDate.toLocaleTimeString('ar-EG', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    messageElement.appendChild(timestamp);
+    
+    messagesContainer.appendChild(messageElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// تحديث كود معالجة زر الرجوع
+window.addEventListener('popstate', (event) => {
+    if (document.getElementById('chat-container').style.display === 'block') {
+        showUsersList();
+    } else if (document.getElementById('users-container').style.display === 'block') {
+        if (confirm('هل تريد تسجيل الخروج؟')) {
+            logout();
+        } else {
+            window.history.pushState({ page: 'users' }, '');
+        }
+    }
+});
     // Load messages
     function loadMessages() {
         const messagesContainer = document.getElementById('messages-container');
@@ -1239,6 +1270,11 @@ function startChat(uid, userData) {
             messageContent.classList.add('message-content');
             
             if (!isSender) {
+                const senderAvatar = document.createElement('img');
+                senderAvatar.src = currentChatUser.avatarUrl || '/api/placeholder/45/45';
+                senderAvatar.classList.add('user-avatar', 'me-2');
+                messageElement.appendChild(senderAvatar);
+
                 const senderName = document.createElement('div');
                 senderName.classList.add('sender-name', 'small', 'text-muted', 'mb-1');
                 senderName.textContent = messageData.senderName;
@@ -1304,6 +1340,284 @@ function startChat(uid, userData) {
             }, 2000);
         }
     });
+
+
+    // إضافة النمط لأزرار الإضافة
+const style = document.createElement('style');
+style.textContent = `
+    .friend-request-btn {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        transition: all 0.3s ease;
+    }
+
+    .pending-request {
+        background-color: #FFA726;
+        color: white;
+    }
+
+    .accept-request {
+        background-color: #66BB6A;
+        color: white;
+    }
+
+    .send-request {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    .request-badge {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        background: #ff4444;
+        color: white;
+        border-radius: 50%;
+        padding: 5px 10px;
+        font-size: 12px;
+        z-index: 1000;
+    }
+`;
+document.head.appendChild(style);
+
+// دالة لإرسال طلب إضافة
+// دالة إرسال طلب صداقة
+async function sendFriendRequest(targetUserId) {
+    try {
+        const requestData = {
+            senderId: currentUser.uid,
+            senderName: currentUser.username,
+            senderAvatar: currentUser.avatarUrl,
+            status: 'pending',
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        };
+
+        // إضافة الطلب إلى قاعدة البيانات
+        await database.ref(`friendRequests/${targetUserId}/${currentUser.uid}`).set(requestData);
+        
+        alert('تم إرسال طلب الصداقة بنجاح');
+    } catch (error) {
+        console.error('خطأ في إرسال طلب الصداقة:', error);
+        alert('حدث خطأ في إرسال الطلب');
+    }
+}
+
+// دالة قبول طلب الصداقة
+async function acceptFriendRequest(senderId) {
+    try {
+        const updates = {};
+        
+        // تحديث حالة الطلب
+        updates[`friendRequests/${currentUser.uid}/${senderId}/status`] = 'accepted';
+        
+        // إضافة العلاقة إلى قائمة الأصدقاء لكلا المستخدمين
+        updates[`friends/${currentUser.uid}/${senderId}`] = true;
+        updates[`friends/${senderId}/${currentUser.uid}`] = true;
+        
+        await database.ref().update(updates);
+        
+        alert('تم قبول طلب الصداقة');
+        loadUsers(); // إعادة تحميل قائمة المستخدمين
+    } catch (error) {
+        console.error('خطأ في قبول طلب الصداقة:', error);
+        alert('حدث خطأ في قبول الطلب');
+    }
+}
+
+// دالة التحقق من حالة الصداقة
+async function checkFriendshipStatus(targetUserId) {
+    try {
+        // التحقق من وجود علاقة صداقة
+        const friendshipSnapshot = await database.ref(`friends/${currentUser.uid}/${targetUserId}`).once('value');
+        if (friendshipSnapshot.exists()) {
+            return 'friends';
+        }
+        
+        // التحقق من وجود طلب معلق
+        const requestSnapshot = await database.ref(`friendRequests/${targetUserId}/${currentUser.uid}`).once('value');
+        if (requestSnapshot.exists()) {
+            return requestSnapshot.val().status;
+        }
+        
+        return 'none';
+    } catch (error) {
+        console.error('خطأ في التحقق من حالة الصداقة:', error);
+        return 'error';
+    }
+}
+
+// دالة تحميل طلبات الصداقة
+async function loadFriendRequests() {
+    try {
+        const requestsSnapshot = await database.ref(`friendRequests/${currentUser.uid}`).once('value');
+        const requests = requestsSnapshot.val() || {};
+        
+        // عرض عدد الطلبات المعلقة
+        const pendingRequests = Object.values(requests).filter(req => req.status === 'pending');
+        
+        return pendingRequests;
+    } catch (error) {
+        console.error('خطأ في تحميل طلبات الصداقة:', error);
+        return [];
+    }
+}
+
+// دالة تحميل قائمة الأصدقاء
+async function loadFriendsList() {
+    try {
+        const friendsSnapshot = await database.ref(`friends/${currentUser.uid}`).once('value');
+        const friends = friendsSnapshot.val() || {};
+        
+        // جلب معلومات الأصدقاء
+        const friendsInfo = await Promise.all(
+            Object.keys(friends).map(async (friendId) => {
+                const userSnapshot = await database.ref(`users/${friendId}`).once('value');
+                return {
+                    id: friendId,
+                    ...userSnapshot.val()
+                };
+            })
+        );
+        
+        return friendsInfo;
+    } catch (error) {
+        console.error('خطأ في تحميل قائمة الأصدقاء:', error);
+        return [];
+    }
+}
+
+// دالة لتحديث شكل زر الإضافة
+function updateRequestButton(userId, status) {
+    const button = document.querySelector(`[data-user-id="${userId}"]`);
+    if (!button) return;
+
+    switch (status) {
+        case 'pending':
+            button.className = 'btn friend-request-btn pending-request';
+            button.innerHTML = '<i class="fas fa-clock me-1"></i> في الانتظار';
+            button.disabled = true;
+            break;
+        case 'accept':
+            button.className = 'btn friend-request-btn accept-request';
+            button.innerHTML = '<i class="fas fa-user-plus me-1"></i> قبول الطلب';
+            button.onclick = () => acceptFriendRequest(userId);
+            break;
+        case 'friends':
+            button.className = 'btn friend-request-btn btn-success';
+            button.innerHTML = '<i class="fas fa-check me-1"></i> صديق';
+            button.disabled = true;
+            break;
+        default:
+            button.className = 'btn friend-request-btn send-request';
+            button.innerHTML = '<i class="fas fa-user-plus me-1"></i> إضافة';
+            button.onclick = () => sendFriendRequest(userId);
+    }
+}
+
+// تحديث دالة تحميل المستخدمين
+async function loadUsers() {
+    try {
+        const usersList = document.getElementById('users-list');
+        usersList.innerHTML = '';
+
+        const [usersSnapshot, friendsSnapshot, requestsSnapshot] = await Promise.all([
+            database.ref('users').once('value'),
+            database.ref(`friends/${currentUser.uid}`).once('value'),
+            database.ref(`friendRequests/${currentUser.uid}`).once('value')
+        ]);
+
+        const users = usersSnapshot.val();
+        const friends = friendsSnapshot.val() || {};
+        const requests = requestsSnapshot.val() || {};
+
+        if (!users) {
+            usersList.innerHTML = '<div class="p-3 text-center">لا يوجد مستخدمين حالياً</div>';
+            return;
+        }
+
+        // عداد طلبات الإضافة
+        const pendingRequests = Object.keys(requests).length;
+        if (pendingRequests > 0) {
+            const badge = document.createElement('div');
+            badge.className = 'request-badge';
+            badge.textContent = pendingRequests;
+            document.body.appendChild(badge);
+        }
+
+        for (const [uid, userData] of Object.entries(users)) {
+            if (uid === currentUser.uid) continue;
+
+            const userElement = document.createElement('div');
+            userElement.className = 'user-list-item';
+            
+            let buttonHtml = '';
+            if (friends[uid]) {
+                buttonHtml = `<button class="btn friend-request-btn btn-success" disabled>
+                    <i class="fas fa-check me-1"></i> صديق
+                </button>`;
+            } else if (requests[uid]) {
+                buttonHtml = `<button class="btn friend-request-btn accept-request" data-user-id="${uid}"
+                    onclick="acceptFriendRequest('${uid}')">
+                    <i class="fas fa-user-plus me-1"></i> قبول الطلب
+                </button>`;
+            } else {
+                buttonHtml = `<button class="btn friend-request-btn send-request" data-user-id="${uid}"
+                    onclick="sendFriendRequest('${uid}')">
+                    <i class="fas fa-user-plus me-1"></i> إضافة
+                </button>`;
+            }
+
+            userElement.innerHTML = `
+                <div class="d-flex align-items-center justify-content-between w-100">
+                    <div class="d-flex align-items-center" onclick="startChatIfFriends('${uid}', ${!!friends[uid]})">
+                        <img src="${userData.avatarUrl || '/api/placeholder/45/45'}" alt="" class="user-avatar">
+                        <div class="user-info">
+                            <h6 class="mb-0">${userData.username}</h6>
+                            <small class="user-id">المعرف: ${userData.userId}</small>
+                        </div>
+                    </div>
+                    ${buttonHtml}
+                </div>
+            `;
+
+            usersList.appendChild(userElement);
+        }
+    } catch (error) {
+        console.error('خطأ في تحميل المستخدمين:', error);
+        alert('حدث خطأ في تحميل قائمة المستخدمين');
+    }
+}
+
+// تحديث دالة بدء المحادثة للتحقق من الصداقة
+function startChatIfFriends(uid, isFriend) {
+    if (!isFriend) {
+        alert('يجب أن تكونوا أصدقاء للتمكن من المحادثة');
+        return;
+    }
+    
+    const userData = users[uid];
+    startChat(uid, userData);
+}
+
+// الاستماع لطلبات الإضافة الجديدة
+function listenToFriendRequests() {
+    database.ref(`friendRequests/${currentUser.uid}`).on('child_added', (snapshot) => {
+        const request = snapshot.val();
+        if (request.status === 'pending') {
+            // تحديث واجهة المستخدم لعرض الطلب الجديد
+            loadUsers();
+        }
+    });
+}
+
+// إضافة المراقب عند تسجيل الدخول
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        // ... الكود السابق ...
+        listenToFriendRequests();
+    }
+});
 
     // ...existing code...
 </script>
