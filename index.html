@@ -565,43 +565,75 @@
         }
 
         // التسجيل المحدث
-        async function register() {
-            const username = document.getElementById('reg-username').value;
-            const email = document.getElementById('reg-email').value;
-            const password = document.getElementById('reg-password').value;
-            const confirmPassword = document.getElementById('reg-confirm-password').value;
+        // احذف الدالة القديمة للتسجيل واستبدلها بهذه الدالة
+async function register() {
+    const username = document.getElementById('reg-username').value;
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-password').value;
+    const confirmPassword = document.getElementById('reg-confirm-password').value;
 
-            if (password !== confirmPassword) {
-                alert('كلمات المرور غير متطابقة');
-                return;
-            }
+    if (password !== confirmPassword) {
+        alert('كلمات المرور غير متطابقة');
+        return;
+    }
 
-            try {
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                const user = userCredential.user;
-                const userId = generateUserId();
+    try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        const userId = generateUserId(); // توليد معرف فريد مكون من 6 أرقام
 
-                await database.ref(`users/${user.uid}`).set({
-                    username: username,
-                    email: email,
-                    userId: userId,
-                    createdAt: firebase.database.ServerValue.TIMESTAMP,
-                    avatarUrl: '/api/placeholder/45/45'
-                });
+        // حفظ بيانات المستخدم مع المعرف في قاعدة البيانات
+        await database.ref(`users/${user.uid}`).set({
+            username: username,
+            email: email,
+            userId: userId, // إضافة المعرف
+            createdAt: firebase.database.ServerValue.TIMESTAMP,
+            avatarUrl: '/api/placeholder/45/45'
+        });
 
-                currentUser = {
-                    uid: user.uid,
-                    username: username,
-                    userId: userId,
-                    avatarUrl: '/api/placeholder/45/45'
-                };
+        currentUser = {
+            uid: user.uid,
+            username: username,
+            userId: userId, // إضافة المعرف للمستخدم الحالي
+            avatarUrl: '/api/placeholder/45/45'
+        };
 
-                showUsersList();
-            } catch (error) {
-                alert(`خطأ في التسجيل: ${error.message}`);
-            }
-        }
+        // عرض قائمة المستخدمين بدلاً من واجهة الدردشة
+        showUsersList();
+    } catch (error) {
+        alert(`خطأ في التسجيل: ${error.message}`);
+    }
+}
 
+// دالة توليد معرف المستخدم
+function generateUserId() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// تحديث دالة تسجيل الدخول لتضمين المعرف
+async function login() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+
+    try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        
+        const snapshot = await database.ref(`users/${user.uid}`).once('value');
+        const userData = snapshot.val();
+        
+        currentUser = {
+            uid: user.uid,
+            username: userData.username,
+            userId: userData.userId, // إضافة المعرف
+            avatarUrl: userData.avatarUrl || '/api/placeholder/45/45'
+        };
+
+        showUsersList(); // عرض قائمة المستخدمين بدلاً من واجهة الدردشة
+    } catch (error) {
+        alert(`خطأ في تسجيل الدخول: ${error.message}`);
+    }
+}
       // عرض قائمة المستخدمين
         function showUsersList() {
             document.getElementById('auth-container').style.display = 'none';
