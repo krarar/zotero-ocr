@@ -1,0 +1,143 @@
+import React, { useState } from 'react';
+import { Filter, SortAsc, TagsIcon, DollarSign } from 'lucide-react';
+
+const FilterBar = () => {
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [priceRange, setPriceRange] = useState('all');
+  const [sortBy, setSortBy] = useState('default');
+  const [activeDropdown, setActiveDropdown] = useState(null);
+
+  const categories = [
+    { id: 'all', label: 'الكل' },
+    { id: 'electronics', label: 'إلكترونيات' },
+    { id: 'clothing', label: 'ملابس' },
+    { id: 'furniture', label: 'أثاث' },
+    { id: 'books', label: 'كتب' }
+  ];
+
+  const priceRanges = [
+    { id: 'all', label: 'جميع الأسعار' },
+    { id: 'under50', label: 'أقل من 50 دينار' },
+    { id: '50to100', label: '50 - 100 دينار' },
+    { id: 'over100', label: 'أكثر من 100 دينار' }
+  ];
+
+  const sortOptions = [
+    { id: 'default', label: 'الترتيب الافتراضي' },
+    { id: 'priceLow', label: 'السعر: من الأقل للأعلى' },
+    { id: 'priceHigh', label: 'السعر: من الأعلى للأقل' },
+    { id: 'newest', label: 'الأحدث' }
+  ];
+
+  const toggleDropdown = (dropdown) => {
+    setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
+  };
+
+  const FilterButton = ({ icon: Icon, label, isActive, onClick }) => (
+    <button
+      onClick={onClick}
+      className={`relative flex items-center gap-2 p-2 rounded-lg transition-all ${
+        isActive ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-100'
+      }`}
+    >
+      <Icon size={20} />
+      <span className="text-sm">{label}</span>
+    </button>
+  );
+
+  const Dropdown = ({ options, value, onChange, isVisible }) => (
+    <div className={`absolute top-full right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2 min-w-[200px] z-50 ${
+      isVisible ? 'block' : 'hidden'
+    }`}>
+      {options.map(option => (
+        <button
+          key={option.id}
+          className={`w-full text-right px-4 py-2 text-sm rounded-md transition-colors ${
+            value === option.id ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-100'
+          }`}
+          onClick={() => {
+            onChange(option.id);
+            setActiveDropdown(null);
+          }}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="bg-white shadow-sm py-3 px-4 mb-6 mt-20">
+      <div className="max-w-screen-xl mx-auto">
+        <div className="flex items-center justify-start gap-4 flex-wrap">
+          {/* تصفية حسب الفئة */}
+          <div className="relative">
+            <FilterButton
+              icon={TagsIcon}
+              label="التصنيف"
+              isActive={activeDropdown === 'category'}
+              onClick={() => toggleDropdown('category')}
+            />
+            <Dropdown
+              options={categories}
+              value={selectedCategory}
+              onChange={setSelectedCategory}
+              isVisible={activeDropdown === 'category'}
+            />
+          </div>
+
+          {/* تصفية حسب السعر */}
+          <div className="relative">
+            <FilterButton
+              icon={DollarSign}
+              label="السعر"
+              isActive={activeDropdown === 'price'}
+              onClick={() => toggleDropdown('price')}
+            />
+            <Dropdown
+              options={priceRanges}
+              value={priceRange}
+              onChange={setPriceRange}
+              isVisible={activeDropdown === 'price'}
+            />
+          </div>
+
+          {/* الترتيب */}
+          <div className="relative">
+            <FilterButton
+              icon={SortAsc}
+              label="الترتيب"
+              isActive={activeDropdown === 'sort'}
+              onClick={() => toggleDropdown('sort')}
+            />
+            <Dropdown
+              options={sortOptions}
+              value={sortBy}
+              onChange={setSortBy}
+              isVisible={activeDropdown === 'sort'}
+            />
+          </div>
+
+          {/* إظهار الفلاتر النشطة */}
+          {(selectedCategory !== 'all' || priceRange !== 'all' || sortBy !== 'default') && (
+            <div className="flex items-center gap-2 mr-auto">
+              <button
+                onClick={() => {
+                  setSelectedCategory('all');
+                  setPriceRange('all');
+                  setSortBy('default');
+                }}
+                className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+              >
+                <Filter size={16} />
+                مسح الفلاتر
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default FilterBar;
