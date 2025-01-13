@@ -377,6 +377,14 @@
             background: #1da1f2;
             color: white;
         }
+
+        .back-button {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -514,6 +522,9 @@
             <div class="chat-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
+                        <button class="back-button me-2" onclick="showUsersList()">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
                         <img src="/api/placeholder/45/45" alt="الصورة الشخصية" class="user-avatar me-2">
                         <h5 class="mb-0" id="current-user-name">اسم المستخدم</h5>
                     </div>
@@ -690,27 +701,104 @@ async function login() {
         }
 
         // تحديث وظيفة إرسال الرسائل
-        async function sendMessage(event) {
-            event.preventDefault();
-            const messageInput = document.getElementById('message-input');
-            const message = messageInput.value.trim();
-            
-            if (message && currentUser && currentChatUser) {
-                try {
-                    await database.ref('messages').push({
-                        senderId: currentUser.uid,
-                        receiverId: currentChatUser.uid,
-                        senderName: currentUser.username,
-                        message: message,
-                        timestamp: firebase.database.ServerValue.TIMESTAMP
-                    });
-                    
-                    messageInput.value = '';
-                } catch (error) {
-                    alert(`خطأ في إرسال الرسالة: ${error.message}`);
-                }
-            }
+      // تحديث دالة إرسال الرسائل
+
+
+// دالة للحصول على معرف المحادثة
+function getChatId(uid1, uid2) {
+    // ترتيب المعرفات تصاعدياً لضمان ثبات معرف المحادثة
+    return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
+}
+
+// تحديث دالة تحميل الرسائل
+function loadMessages() {
+    const messagesContainer = document.getElementById('messages-container');
+    messagesContainer.innerHTML = ''; // تنظيف الرسائل السابقة
+    
+    const chatId = getChatId(currentUser.uid, currentChatUser.uid);
+    
+    // الاستماع للرسائل الجديدة في المحادثة المحددة
+    database.ref(`chats/${chatId}/messages`).on('child_added', (snapshot) => {
+        const messageData = snapshot.val();
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+        
+        // تحديد نوع الرسالة (مرسلة أو مستلمة)
+        const isSender = messageData.senderId === currentUser.uid;
+        messageElement.classList.add(isSender ? 'message-sent' : 'message-received');
+        
+        // إنشاء محتوى الرسالة
+        const messageContent = document.createElement('div');
+        messageContent.classList.add('message-content');
+        
+        // إضافة اسم المرسل للرسائل المستلمة فقط
+        if (!isSender) {
+            const senderName = document.createElement('div');
+            senderName.classList.add('sender-name', 'small', 'text-muted', 'mb-1');
+            senderName.textContent = messageData.senderName;
+            messageElement.appendChild(senderName);
         }
+        
+        messageContent.textContent = messageData.message;
+        messageElement.appendChild(messageContent);
+        
+        // إضافة التوقيت
+        const timestamp = document.createElement('div');
+        timestamp.classList.add('message-time', 'small', 'text-muted', 'mt-1');
+        const messageDate = new Date(messageData.timestamp);
+        timestamp.textContent = messageDate.toLocaleTimeString('ar-EG', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        messageElement.appendChild(timestamp);
+        
+        messagesContainer.appendChild(messageElement);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    });
+
+    // إلغاء الاستماع للمحادثات السابقة عند تغيير المستخدم
+    return () => {
+        database.ref(`chats/${chatId}/messages`).off();
+    };
+}
+
+// تحديث دالة بدء المحادثة
+function startChat(uid, userData) {
+    currentChatUser = {
+        uid,
+        username: userData.username,
+        avatarUrl: userData.avatarUrl
+    };
+
+    document.getElementById('users-container').style.display = 'none';
+    document.getElementById('chat-container').style.display = 'block';
+    
+    // تحديث واجهة المحادثة
+    const chatHeader = document.querySelector('.chat-header');
+    chatHeader.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-light me-2" onclick="showUsersList()">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+                <img src="${userData.avatarUrl || '/api/placeholder/45/45'}" alt="" class="user-avatar me-2">
+                <div>
+                    <h5 class="mb-0">${userData.username}</h5>
+                    <small class="text-light">المعرف: ${userData.userId}</small>
+                </div>
+            </div>
+            <div>
+                <button class="btn btn-light" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+    `;
+
+    // تنظيف وتحميل الرسائل
+    document.getElementById('messages-container').innerHTML = '';
+    loadMessages();
+}
 
         // تحديث وظيفة تحميل الرسائل
         function loadMessages() {
@@ -1028,6 +1116,196 @@ async function login() {
                 showLogin();
             }
         });
-    </script>
+
+    // Function to get chat ID
+    function getChatId(uid1, uid2) {
+        return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
+    }
+
+    // Update login function to include userId
+    async function login() {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+
+        try {
+            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            const user = userCredential.user;
+            
+            const snapshot = await database.ref(`users/${user.uid}`).once('value');
+            const userData = snapshot.val();
+            
+            currentUser = {
+                uid: user.uid,
+                username: userData.username,
+                userId: userData.userId,
+                avatarUrl: userData.avatarUrl || '/api/placeholder/45/45'
+            };
+
+            showUsersList();
+        } catch (error) {
+            alert(`خطأ في تسجيل الدخول: ${error.message}`);
+        }
+    }
+
+    // Show users list
+    function showUsersList() {
+        document.getElementById('auth-container').style.display = 'none';
+        document.getElementById('chat-container').style.display = 'none';
+        document.getElementById('users-container').style.display = 'block';
+        document.getElementById('current-user-name').textContent = currentUser.username;
+        document.getElementById('current-user-id').textContent = `المعرف: ${currentUser.userId}`;
+        document.getElementById('current-user-avatar').src = currentUser.avatarUrl;
+        loadUsers();
+    }
+
+    // Load users
+    async function loadUsers() {
+        const usersList = document.getElementById('users-list');
+        usersList.innerHTML = '';
+
+        const snapshot = await database.ref('users').once('value');
+        const users = snapshot.val();
+
+        for (const [uid, userData] of Object.entries(users)) {
+            if (uid === currentUser.uid) continue;
+
+            const userElement = document.createElement('div');
+            userElement.className = 'user-list-item';
+            userElement.innerHTML = `
+                <img src="${userData.avatarUrl || '/api/placeholder/45/45'}" alt="" class="user-avatar">
+                <div class="user-info">
+                    <h6 class="mb-0">${userData.username}</h6>
+                    <small class="user-id">المعرف: ${userData.userId}</small>
+                </div>
+            `;
+
+            userElement.onclick = () => startChat(uid, userData);
+            usersList.appendChild(userElement);
+        }
+    }
+
+    // Start chat
+    function startChat(uid, userData) {
+        currentChatUser = {
+            uid,
+            username: userData.username,
+            avatarUrl: userData.avatarUrl
+        };
+
+        document.getElementById('users-container').style.display = 'none';
+        document.getElementById('chat-container').style.display = 'block';
+        
+        const chatHeader = document.querySelector('.chat-header');
+        chatHeader.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-light me-2" onclick="showUsersList()">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <img src="${userData.avatarUrl || '/api/placeholder/45/45'}" alt="" class="user-avatar me-2">
+                    <div>
+                        <h5 class="mb-0">${userData.username}</h5>
+                        <small class="text-light">المعرف: ${userData.userId}</small>
+                    </div>
+                </div>
+                <div>
+                    <button class="btn btn-light" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('messages-container').innerHTML = '';
+        loadMessages();
+    }
+
+    // Load messages
+    function loadMessages() {
+        const messagesContainer = document.getElementById('messages-container');
+        messagesContainer.innerHTML = ''; 
+        
+        const chatId = getChatId(currentUser.uid, currentChatUser.uid);
+        
+        database.ref(`chats/${chatId}/messages`).on('child_added', (snapshot) => {
+            const messageData = snapshot.val();
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            
+            const isSender = messageData.senderId === currentUser.uid;
+            messageElement.classList.add(isSender ? 'message-sent' : 'message-received');
+            
+            const messageContent = document.createElement('div');
+            messageContent.classList.add('message-content');
+            
+            if (!isSender) {
+                const senderName = document.createElement('div');
+                senderName.classList.add('sender-name', 'small', 'text-muted', 'mb-1');
+                senderName.textContent = messageData.senderName;
+                messageElement.appendChild(senderName);
+            }
+            
+            messageContent.textContent = messageData.message;
+            messageElement.appendChild(messageContent);
+            
+            const timestamp = document.createElement('div');
+            timestamp.classList.add('message-time', 'small', 'text-muted', 'mt-1');
+            const messageDate = new Date(messageData.timestamp);
+            timestamp.textContent = messageDate.toLocaleTimeString('ar-EG', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            messageElement.appendChild(timestamp);
+            
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        });
+
+        return () => {
+            database.ref(`chats/${chatId}/messages`).off();
+        };
+    }
+
+    // Send message
+    async function sendMessage(event) {
+        event.preventDefault();
+        const messageInput = document.getElementById('message-input');
+        const message = messageInput.value.trim();
+        
+        if (message && currentUser) {
+            try {
+                const chatId = getChatId(currentUser.uid, currentChatUser.uid);
+                await database.ref(`chats/${chatId}/messages`).push({
+                    senderId: currentUser.uid,
+                    senderName: currentUser.username,
+                    message: message,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                
+                messageInput.value = '';
+            } catch (error) {
+                alert(`خطأ في إرسال الرسالة: ${error.message}`);
+            }
+        }
+    }
+
+    // Handle back button press
+    let backPressedOnce = false;
+    window.addEventListener('popstate', () => {
+        if (document.getElementById('chat-container').style.display === 'block') {
+            showUsersList();
+        } else if (backPressedOnce) {
+            window.history.back();
+        } else {
+            backPressedOnce = true;
+            alert('اضغط مرة أخرى للخروج');
+            setTimeout(() => {
+                backPressedOnce = false;
+            }, 2000);
+        }
+    });
+
+    // ...existing code...
+</script>
 </body>
 </html>
