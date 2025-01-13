@@ -1619,6 +1619,249 @@ auth.onAuthStateChanged(async (user) => {
     }
 });
 
+// إضافة أنماط إضافية لقائمة طلبات الصداقة
+const notificationStyles = `
+    .requests-notification {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: white;
+        border-radius: 50px;
+        padding: 8px 15px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        cursor: pointer;
+        z-index: 1000;
+        transition: all 0.3s ease;
+    }
+
+    .requests-notification:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .requests-count {
+        background: #ff4444;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 50px;
+        font-size: 12px;
+    }
+
+    .requests-panel {
+        position: fixed;
+        top: 70px;
+        left: 20px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        width: 300px;
+        max-height: 400px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+    }
+
+    .request-item {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .request-user-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .request-buttons {
+        display: flex;
+        gap: 5px;
+    }
+
+    .btn-accept {
+        background: var(--primary-color);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        border: none;
+        font-size: 0.8rem;
+    }
+
+    .btn-reject {
+        background: #ff4444;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        border: none;
+        font-size: 0.8rem;
+    }
+`;
+
+document.head.appendChild(document.createElement('style')).textContent = notificationStyles;
+
+// تحديث دالة بدء المحادثة
+async function startChatIfFriends(uid, isFriend) {
+    try {
+        // التحقق من حالة الصداقة
+        const friendshipStatus = await checkFriendshipStatus(uid);
+        
+        if (friendshipStatus !== 'friends') {
+            alert('يجب أن تكونوا أصدقاء للتمكن من المحادثة');
+            return;
+        }
+        
+        // جلب معلومات المستخدم
+        const userSnapshot = await database.ref(`users/${uid}`).once('value');
+        const userData = userSnapshot.val();
+        
+        if (userData) {
+            startChat(uid, userData);
+        } else {
+            alert('لا يمكن العثور على معلومات المستخدم');
+        }
+    } catch (error) {
+        console.error('خطأ في بدء المحادثة:', error);
+        alert('حدث خطأ في بدء المحادثة');
+    }
+}
+
+// إضافة واجهة طلبات الصداقة
+function showFriendRequests() {
+    const existingPanel = document.querySelector('.requests-panel');
+    if (existingPanel) {
+        existingPanel.style.display = existingPanel.style.display === 'none' ? 'block' : 'none';
+        return;
+    }
+
+    const panel = document.createElement('div');
+    panel.className = 'requests-panel';
+    document.body.appendChild(panel);
+    
+    loadFriendRequests().then(requests => {
+        if (requests.length === 0) {
+            panel.innerHTML = '<div class="p-3 text-center">لا توجد طلبات صداقة</div>';
+            return;
+        }
+
+        requests.forEach(request => {
+            const requestElement = document.createElement('div');
+            requestElement.className = 'request-item';
+            requestElement.innerHTML = `
+                <div class="request-user-info">
+                    <img src="${request.senderAvatar}" class="user-avatar" style="width: 40px; height: 40px;">
+                    <div>
+                        <div class="fw-bold">${request.senderName}</div>
+                        <small class="text-muted">يريد إضافتك كصديق</small>
+                    </div>
+                </div>
+                <div class="request-buttons">
+                    <button class="btn-accept" onclick="acceptFriendRequest('${request.senderId}')">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn-reject" onclick="rejectFriendRequest('${request.senderId}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            panel.appendChild(requestElement);
+        });
+    });
+
+    panel.style.display = 'block';
+}
+
+// تحديث دالة تحميل المستخدمين
+async function loadUsers() {
+    try {
+        const usersList = document.getElementById('users-list');
+        usersList.innerHTML = '';
+
+        const [usersSnapshot, friendsSnapshot, requestsSnapshot] = await Promise.all([
+            database.ref('users').once('value'),
+            database.ref(`friends/${currentUser.uid}`).once('value'),
+            database.ref(`friendRequests/${currentUser.uid}`).once('value')
+        ]);
+
+        const users = usersSnapshot.val();
+        const friends = friendsSnapshot.val() || {};
+        const requests = requestsSnapshot.val() || {};
+
+        // إضافة زر إشعارات طلبات الصداقة
+        const pendingRequests = Object.values(requests).filter(req => req.status === 'pending').length;
+        if (pendingRequests > 0) {
+            const existingNotification = document.querySelector('.requests-notification');
+            if (!existingNotification) {
+                const notification = document.createElement('div');
+                notification.className = 'requests-notification';
+                notification.innerHTML = `
+                    <i class="fas fa-user-plus"></i>
+                    <span class="requests-count">${pendingRequests}</span>
+                    <span>طلبات الصداقة</span>
+                `;
+                notification.onclick = showFriendRequests;
+                document.body.appendChild(notification);
+            }
+        }
+
+        // عرض المستخدمين
+        if (!users) {
+            usersList.innerHTML = '<div class="p-3 text-center">لا يوجد مستخدمين حالياً</div>';
+            return;
+        }
+
+        // إضافة المستخدمين للقائمة
+        for (const [uid, userData] of Object.entries(users)) {
+            if (uid === currentUser.uid) continue;
+
+            const userElement = document.createElement('div');
+            userElement.className = 'user-list-item';
+            
+            let buttonHtml = '';
+            if (friends[uid]) {
+                buttonHtml = `
+                    <button class="btn friend-request-btn btn-success" onclick="startChatIfFriends('${uid}', true)">
+                        <i class="fas fa-comments me-1"></i> محادثة
+                    </button>`;
+            } else if (requests[uid]) {
+                buttonHtml = `
+                    <button class="btn friend-request-btn accept-request" data-user-id="${uid}"
+                        onclick="acceptFriendRequest('${uid}')">
+                        <i class="fas fa-user-plus me-1"></i> قبول الطلب
+                    </button>`;
+            } else {
+                buttonHtml = `
+                    <button class="btn friend-request-btn send-request" data-user-id="${uid}"
+                        onclick="sendFriendRequest('${uid}')">
+                        <i class="fas fa-user-plus me-1"></i> إضافة
+                    </button>`;
+            }
+
+            userElement.innerHTML = `
+                <div class="d-flex align-items-center justify-content-between w-100">
+                    <div class="d-flex align-items-center">
+                        <img src="${userData.avatarUrl || '/api/placeholder/45/45'}" alt="" class="user-avatar">
+                        <div class="user-info">
+                            <h6 class="mb-0">${userData.username}</h6>
+                            <small class="user-id">المعرف: ${userData.userId}</small>
+                        </div>
+                    </div>
+                    ${buttonHtml}
+                </div>
+            `;
+
+            usersList.appendChild(userElement);
+        }
+    } catch (error) {
+        console.error('خطأ في تحميل المستخدمين:', error);
+        alert('حدث خطأ في تحميل قائمة المستخدمين');
+    }
+}
+
     // ...existing code...
 </script>
 </body>
