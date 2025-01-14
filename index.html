@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
+    <meta name="theme-color" content="#7C4DFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="تطبيق المحادثة">
+
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="https://firebasestorage.googleapis.com/v0/b/messageemeapp.appspot.com/o/profiles%2Fchat.jpg?alt=media&token=7c762f98-fb0f-43d8-83c3-996b6373ff7d">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تطبيق المحادثة</title>
@@ -506,7 +513,9 @@
                     </div>
                 </div>
                 <div>
-                    
+                    <button class="btn btn-light" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -530,7 +539,9 @@
                         </div>
                     </div>
                     <div>
-                      
+                        <button class="btn btn-light" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2110,6 +2121,19 @@ auth.onAuthStateChanged(async (user) => {
         showLogin();
     }
 });
+
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(registration => {
+                console.log('ServiceWorker registration successful');
+            })
+            .catch(error => {
+                console.log('ServiceWorker registration failed:', error);
+            });
+    });
+}
     // ...existing code...
 </script>
 </body>
